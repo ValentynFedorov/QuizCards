@@ -18,8 +18,22 @@ const FileUpload = ({ onFileSelect, onTextInput, isLoading }) => {
 
   const handleTextSubmit = () => {
     if (textInput.trim()) {
+      const wordCount = textInput.trim().split(/\s+/).length;
+      if (wordCount > 5000) {
+        alert(`Text is too long. Maximum 5000 words allowed, but you have ${wordCount} words. Please reduce the text length.`);
+        return;
+      }
       onTextInput(textInput);
     }
+  };
+
+  const getWordCount = () => {
+    if (!textInput.trim()) return 0;
+    return textInput.trim().split(/\s+/).length;
+  };
+
+  const isTextTooLong = () => {
+    return getWordCount() > 5000;
   };
 
   const handleDragOver = (e) => {
@@ -91,7 +105,7 @@ const FileUpload = ({ onFileSelect, onTextInput, isLoading }) => {
               <p className="text-gray-600 mb-2">
                 {selectedFile ? selectedFile.name : 'Drop your PDF file here or click to browse'}
               </p>
-              <p className="text-sm text-gray-400">PDF files only</p>
+              <p className="text-sm text-gray-400">PDF files only • Maximum 5000 words</p>
             </div>
           </div>
           <input
@@ -116,13 +130,23 @@ const FileUpload = ({ onFileSelect, onTextInput, isLoading }) => {
             disabled={isLoading}
           />
           <div className="mt-4 flex justify-between items-center">
-            <span className="text-sm text-gray-500">
-              {textInput.length} characters
-            </span>
+            <div className="text-sm">
+              <span className="text-gray-500 mr-4">
+                {textInput.length} characters
+              </span>
+              <span className={`${isTextTooLong() ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+                {getWordCount()} / 5000 words
+              </span>
+              {isTextTooLong() && (
+                <span className="block text-xs text-red-500 mt-1">
+                  ⚠️ Text exceeds maximum word limit
+                </span>
+              )}
+            </div>
             <button
-              className="btn-primary"
+              className={`btn-primary ${isTextTooLong() ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={handleTextSubmit}
-              disabled={!textInput.trim() || isLoading}
+              disabled={!textInput.trim() || isLoading || isTextTooLong()}
             >
               {isLoading ? (
                 <span className="flex items-center">
