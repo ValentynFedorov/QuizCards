@@ -96,6 +96,10 @@ body {
   font-size: 0.9rem;
 }
 
+.job-progress-shell {
+  margin-top: 0.7rem;
+}
+
 .logo-pill {
   width: 2.6rem;
   height: 2.6rem;
@@ -246,6 +250,11 @@ body {
   border-radius: 0.65rem;
   background: rgba(10, 17, 31, 0.6);
   transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.quiz-option span:last-child {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .btn-ghost:hover:not(:disabled) {
@@ -541,6 +550,7 @@ body {
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: 0 8px 18px rgba(2, 8, 18, 0.42);
+  overflow: auto;
 }
 
 .flashcard-back {
@@ -558,6 +568,32 @@ body {
 .flashcard-face p {
   margin: 0;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.source-chip {
+  margin-top: auto;
+  align-self: flex-start;
+  border: 1px solid rgba(123, 168, 252, 0.3);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  color: #c5dcff;
+  background: rgba(20, 35, 63, 0.68);
+}
+
+.flashcard-helper {
+  color: #b6d4ff;
+  font-size: 0.8rem;
+}
+
+.flashcard-source-excerpt {
+  margin-top: auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  border-top: 1px dashed rgba(128, 163, 233, 0.24);
+  padding-top: 0.4rem;
 }
 
 .quiz-shell {
@@ -599,6 +635,12 @@ body {
   margin: 0;
   font-size: 1rem;
   line-height: 1.5;
+}
+
+.quiz-source {
+  margin: 0.45rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .quiz-options {
@@ -698,6 +740,50 @@ body {
 
 .review-explanation {
   color: var(--text-muted);
+}
+
+.insights-duo {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.7rem;
+}
+
+.insight-panel {
+  border: 1px solid rgba(129, 170, 242, 0.24);
+  border-radius: 0.82rem;
+  background: rgba(8, 14, 27, 0.6);
+  padding: 0.7rem;
+}
+
+.insight-panel h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.insight-summary {
+  margin: 0.35rem 0 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.insight-panel ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.insight-panel li {
+  color: #d8e7ff;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.insight-panel li span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.76rem;
 }
 
 .empty-state {

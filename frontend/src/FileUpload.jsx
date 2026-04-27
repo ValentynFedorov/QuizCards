@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const MAX_WORDS = 5000;
+const MAX_WORDS = 30000;
 
 const FileUpload = ({ onFileSelect, onTextInput, isLoading }) => {
   const [activeTab, setActiveTab] = useState('pdf');
@@ -87,7 +87,7 @@ const FileUpload = ({ onFileSelect, onTextInput, isLoading }) => {
           <p className="dropzone-title">
             {selectedFile ? selectedFile.name : 'Drop your PDF here or click to browse'}
           </p>
-          <p className="dropzone-subtitle">Supports document extraction and summary generation.</p>
+          <p className="dropzone-subtitle">Supports large document extraction, grounding, and study generation.</p>
           <input
             id="file-input"
             type="file"

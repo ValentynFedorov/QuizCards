@@ -35,8 +35,12 @@ export const apiService = {
     return response.data;
   },
 
-  generateFlashcards: async (text, numCards = 5) => {
-    const response = await api.post(`/flashcards?num_cards=${numCards}`, { text });
+  generateFlashcards: async (text, numCards = 5, mode = 'qa') => {
+    const params = new URLSearchParams({
+      num_cards: String(numCards),
+      mode,
+    });
+    const response = await api.post(`/flashcards?${params.toString()}`, { text });
     return response.data;
   },
 
@@ -56,6 +60,52 @@ export const apiService = {
     }
 
     const response = await api.post(`/quiz?${params.toString()}`, { text });
+    return response.data;
+  },
+
+  startStudyJob: async ({
+    text,
+    numCards = 6,
+    numQuestions = 6,
+    flashcardMode = 'qa',
+    quizMode = 'fast',
+    ollamaModel = '',
+    includeSummary = true,
+    includeKeyPoints = true,
+  }) => {
+    const response = await api.post('/jobs/study', {
+      text,
+      num_cards: numCards,
+      num_questions: numQuestions,
+      flashcard_mode: flashcardMode,
+      quiz_mode: quizMode,
+      ollama_model: ollamaModel?.trim() || null,
+      include_summary: includeSummary,
+      include_key_points: includeKeyPoints,
+    });
+    return response.data;
+  },
+
+  getStudyJob: async (jobId) => {
+    const response = await api.get(`/jobs/study/${jobId}`);
+    return response.data;
+  },
+
+  generateQuizInsights: async (attempts) => {
+    const response = await api.post('/quiz/insights', { attempts });
+    return response.data;
+  },
+
+  generateAdaptiveReview: async (attempts, flashcards = []) => {
+    const response = await api.post('/review/adaptive', {
+      attempts,
+      flashcards,
+    });
+    return response.data;
+  },
+
+  getCacheStats: async () => {
+    const response = await api.get('/system/cache');
     return response.data;
   },
 

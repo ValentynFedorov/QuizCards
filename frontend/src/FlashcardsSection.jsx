@@ -19,6 +19,7 @@ const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-
 
 const FlashcardItem = ({ flashcard, index }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const modeLabel = flashcard.mode === 'cloze' ? 'Cloze' : 'Q/A';
 
   return (
     <button
@@ -30,9 +31,12 @@ const FlashcardItem = ({ flashcard, index }) => {
         <div className="flashcard-face flashcard-front">
           <div className="flashcard-meta">
             <span>Card {index + 1}</span>
-            <span>Question</span>
+            <span>{modeLabel}</span>
           </div>
           <p>{flashcard.question}</p>
+          {flashcard.source_position && (
+            <div className="source-chip">Source: {flashcard.source_position}</div>
+          )}
         </div>
         <div className="flashcard-face flashcard-back">
           <div className="flashcard-meta">
@@ -40,6 +44,14 @@ const FlashcardItem = ({ flashcard, index }) => {
             <span>Answer</span>
           </div>
           <p>{flashcard.answer}</p>
+          {flashcard.cloze_answer && (
+            <p className="flashcard-helper">
+              Hidden token: <strong>{flashcard.cloze_answer}</strong>
+            </p>
+          )}
+          {flashcard.source_excerpt && (
+            <p className="flashcard-source-excerpt">{flashcard.source_excerpt}</p>
+          )}
         </div>
       </div>
     </button>
@@ -47,10 +59,12 @@ const FlashcardItem = ({ flashcard, index }) => {
 };
 
 const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, isLoading }) => {
-  const [numCards, setNumCards] = useState(6);
+  const [numCards, setNumCards] = useState(8);
+  const [cardMode, setCardMode] = useState('qa');
   const [cardOrder, setCardOrder] = useState([]);
 
   const cards = useMemo(() => flashcards?.flashcards ?? [], [flashcards]);
+  const activeMode = flashcards?.mode || cardMode;
 
   useEffect(() => {
     setCardOrder(cards.map((_, index) => index));
@@ -66,7 +80,7 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
   }
 
   const handleGenerate = () => {
-    onGenerateFlashcards(numCards);
+    onGenerateFlashcards(numCards, { mode: cardMode });
   };
 
   const handleShuffle = () => {
@@ -83,8 +97,13 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
   const handleExportCsv = () => {
     if (!cards.length) return;
     const lines = [
-      'question,answer',
-      ...cards.map((card) => `${escapeCsvValue(card.question)},${escapeCsvValue(card.answer)}`),
+      'question,answer,mode,source_position',
+      ...cards.map(
+        (card) =>
+          `${escapeCsvValue(card.question)},${escapeCsvValue(card.answer)},${escapeCsvValue(
+            card.mode || 'qa'
+          )},${escapeCsvValue(card.source_position || '')}`
+      ),
     ];
     downloadTextFile('quizcards-flashcards.csv', lines.join('\n'), 'text/csv;charset=utf-8');
   };
@@ -92,8 +111,11 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
   const handleExportTsv = () => {
     if (!cards.length) return;
     const lines = [
-      'question\tanswer',
-      ...cards.map((card) => `${card.question.replace(/\t/g, ' ')}\t${card.answer.replace(/\t/g, ' ')}`),
+      'question\tanswer\tmode\tsource_position',
+      ...cards.map(
+        (card) =>
+          `${card.question.replace(/\t/g, ' ')}\t${card.answer.replace(/\t/g, ' ')}\t${(card.mode || 'qa').replace(/\t/g, ' ')}\t${(card.source_position || '').replace(/\t/g, ' ')}`
+      ),
     ];
     downloadTextFile('quizcards-flashcards.tsv', lines.join('\n'));
   };
@@ -104,11 +126,25 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
         <div>
           <h2 className="section-title">Flashcards Lab</h2>
           <p className="section-subtitle">
-            Generate, shuffle, and export cards for spaced practice tools.
+            Generate grounded cards with Q/A or Cloze mode and trace each card back to source.
           </p>
         </div>
 
         <div className="inline-controls">
+          <label htmlFor="flashcardMode" className="control-label">
+            Mode
+          </label>
+          <select
+            id="flashcardMode"
+            value={cardMode}
+            onChange={(event) => setCardMode(event.target.value)}
+            className="modern-select"
+            disabled={isLoading}
+          >
+            <option value="qa">Q/A</option>
+            <option value="cloze">Cloze</option>
+          </select>
+
           <label htmlFor="numCards" className="control-label">
             Cards
           </label>
@@ -119,7 +155,7 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
             className="modern-select"
             disabled={isLoading}
           >
-            {[4, 5, 6, 7, 8, 9, 10].map((count) => (
+            {[6, 8, 10, 12, 14, 16, 18, 20].map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>
@@ -133,6 +169,7 @@ const FlashcardsSection = ({ extractedText, flashcards, onGenerateFlashcards, is
 
       {!!cards.length && (
         <div className="toolbar-row">
+          <span className="meta-pill">Mode: {activeMode === 'cloze' ? 'Cloze' : 'Q/A'}</span>
           <button className="btn-ghost" onClick={handleShuffle}>
             Shuffle
           </button>

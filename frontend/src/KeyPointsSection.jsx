@@ -25,7 +25,7 @@ const KeyPointsSection = ({ extractedText, keyPoints, onGenerateKeyPoints, isLoa
             className="modern-select"
             disabled={isLoading}
           >
-            {[5, 6, 7, 8, 9, 10, 12].map((count) => (
+            {[6, 8, 10, 12, 14, 16, 18, 20].map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>

@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => {
-  const [numQuestions, setNumQuestions] = useState(6);
+const QuizModeSection = ({
+  extractedText,
+  quiz,
+  onGenerateQuiz,
+  isLoading,
+  onAnalyzeQuizPerformance,
+  weakTopics,
+  adaptiveReview,
+  isAnalyzing,
+}) => {
+  const [numQuestions, setNumQuestions] = useState(8);
   const [generationMode, setGenerationMode] = useState('fast');
   const [ollamaModel, setOllamaModel] = useState('qwen2.5:7b');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -17,10 +26,7 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
     setShowResults(false);
   }, [quiz]);
 
-  const answeredCount = useMemo(
-    () => Object.keys(selectedAnswers).length,
-    [selectedAnswers]
-  );
+  const answeredCount = useMemo(() => Object.keys(selectedAnswers).length, [selectedAnswers]);
 
   const score = useMemo(() => {
     if (!questions.length) return 0;
@@ -52,12 +58,27 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
     setCurrentIndex((prev) => Math.max(0, prev - 1));
   };
 
+  const buildAttemptsPayload = () =>
+    questions.map((question, index) => ({
+      question: question.question,
+      options: question.options,
+      correct_option: question.correct_option,
+      selected_option: selectedAnswers[index] ?? null,
+      explanation: question.explanation,
+      wrong_option_explanations: question.wrong_option_explanations || [],
+    }));
+
+  const handleAnalyzePerformance = async () => {
+    if (!questions.length) return;
+    await onAnalyzeQuizPerformance(buildAttemptsPayload());
+  };
+
   return (
     <section className="glass-card section-appear">
       <div className="section-header">
         <div>
           <h2 className="section-title">Quiz Mode</h2>
-          <p className="section-subtitle">Practice recall with instant feedback and scoring.</p>
+          <p className="section-subtitle">Practice recall with instant feedback, weakness mapping, and review scheduling.</p>
         </div>
         <div className="inline-controls">
           <label htmlFor="numQuestions" className="control-label">
@@ -70,7 +91,7 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
             className="modern-select"
             disabled={isLoading}
           >
-            {[4, 5, 6, 7, 8, 9, 10, 12].map((count) => (
+            {[6, 8, 10, 12, 14, 16, 18, 20].map((count) => (
               <option key={count} value={count}>
                 {count}
               </option>
@@ -119,6 +140,7 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
           <span className="meta-pill">Mode: {quiz.generation_mode || 'fast'}</span>
           {quiz.model && <span className="meta-pill">Model: {quiz.model}</span>}
           {quiz.fallback_used && <span className="meta-pill warning">Fallback used</span>}
+          {quiz.doc_hash && <span className="meta-pill">Doc hash: {quiz.doc_hash.slice(0, 8)}…</span>}
         </div>
       )}
 
@@ -140,15 +162,15 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
               </span>
             </div>
             <div className="progress-track">
-              <div
-                className="progress-fill"
-                style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-              />
+              <div className="progress-fill" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
             </div>
           </div>
 
           <div className="quiz-card">
             <h3>{currentQuestion?.question}</h3>
+            {currentQuestion?.source_position && (
+              <p className="quiz-source">Source: {currentQuestion.source_position}</p>
+            )}
             <div className="quiz-options">
               {currentQuestion?.options?.map((option, index) => {
                 const selected = selectedAnswers[currentIndex] === index;
@@ -167,18 +189,10 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
           </div>
 
           <div className="quiz-actions">
-            <button
-              className="btn-ghost"
-              onClick={handleBack}
-              disabled={currentIndex === 0}
-            >
+            <button className="btn-ghost" onClick={handleBack} disabled={currentIndex === 0}>
               Previous
             </button>
-            <button
-              className="btn-neon"
-              onClick={handleNext}
-              disabled={selectedAnswers[currentIndex] === undefined}
-            >
+            <button className="btn-neon" onClick={handleNext} disabled={selectedAnswers[currentIndex] === undefined}>
               {currentIndex === questions.length - 1 ? 'Finish Quiz' : 'Next'}
             </button>
           </div>
@@ -191,30 +205,28 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
             <h3>
               Score: {score}/{questions.length}
             </h3>
-            <p>
-              Accuracy: {Math.round((score / questions.length) * 100)}%
-            </p>
+            <p>Accuracy: {Math.round((score / questions.length) * 100)}%</p>
           </div>
 
           <div className="result-review">
             {questions.map((question, index) => {
               const selected = selectedAnswers[index];
               const isCorrect = selected === question.correct_option;
+              const wrongExplanation =
+                selected !== undefined ? question.wrong_option_explanations?.[selected] : null;
               return (
                 <div key={`${question.question}-${index}`} className={`review-item ${isCorrect ? 'correct' : 'wrong'}`}>
                   <p className="review-question">{question.question}</p>
                   <p>
                     Your answer:{' '}
-                    <strong>
-                      {selected !== undefined ? question.options[selected] : 'Not answered'}
-                    </strong>
+                    <strong>{selected !== undefined ? question.options[selected] : 'Not answered'}</strong>
                   </p>
                   {!isCorrect && (
                     <p>
                       Correct answer: <strong>{question.options[question.correct_option]}</strong>
                     </p>
                   )}
-                  <p className="review-explanation">{question.explanation}</p>
+                  <p className="review-explanation">{isCorrect ? question.explanation : wrongExplanation || question.explanation}</p>
                 </div>
               );
             })}
@@ -223,6 +235,9 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
           <div className="quiz-actions">
             <button className="btn-ghost" onClick={() => setShowResults(false)}>
               Review Again
+            </button>
+            <button className="btn-neon" onClick={handleAnalyzePerformance} disabled={isAnalyzing}>
+              {isAnalyzing ? 'Analyzing…' : 'Analyze Weak Topics'}
             </button>
             <button
               className="btn-neon"
@@ -236,6 +251,42 @@ const QuizModeSection = ({ extractedText, quiz, onGenerateQuiz, isLoading }) => 
               Regenerate Quiz
             </button>
           </div>
+        </div>
+      )}
+
+      {(weakTopics?.weak_topics?.length > 0 || adaptiveReview?.queue?.length > 0) && (
+        <div className="insights-duo">
+          {weakTopics?.weak_topics?.length > 0 && (
+            <div className="insight-panel">
+              <h3>Weak Topics</h3>
+              <p className="insight-summary">Overall accuracy: {Math.round((weakTopics.overall_accuracy || 0) * 100)}%</p>
+              <ul>
+                {weakTopics.weak_topics.map((topic) => (
+                  <li key={topic.topic}>
+                    <strong>{topic.topic}</strong> — mistakes: {topic.mistakes}/{topic.attempts} ({Math.round(topic.accuracy * 100)}%)
+                    <span>{topic.recommendation}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {adaptiveReview?.queue?.length > 0 && (
+            <div className="insight-panel">
+              <h3>Adaptive Review Queue</h3>
+              <ul>
+                {adaptiveReview.queue.slice(0, 10).map((item) => (
+                  <li key={item.item_id}>
+                    <strong>{item.prompt}</strong>
+                    <span>
+                      Priority {item.priority} · Next review in {item.next_review_minutes} min
+                    </span>
+                    <span>{item.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </section>
